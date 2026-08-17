@@ -1,12 +1,25 @@
-import { basicAction } from '@/actions/basicAction';
+import { apiFetch } from '@/lib/api';
+
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  category: string;
+  date: string;
+  location: string;
+  price: number;
+}
+
+type EventsApiResponse = Event[]
 
 export default async function Page() {
-  const result = await basicAction();
+  const events = await apiFetch<EventsApiResponse>('/api/events');
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        {result.data?.message}
+    <div>
+      <main>
+        {events.map((e) => e.title)}
       </main>
     </div>
   );
