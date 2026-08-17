@@ -3,3 +3,11 @@ export interface Ticket {
   seatNumber: string | null
   status: string
 }
+
+export interface ReserveTicketResponse {
+  id: string;
+  secureHash: string;
+  seatNumber: string;
+  status: string;
+  event: Event;
+}

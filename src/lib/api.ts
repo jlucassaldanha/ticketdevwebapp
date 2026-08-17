@@ -13,6 +13,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    cache: 'no-store'
   });
 
   if (!response.ok) {

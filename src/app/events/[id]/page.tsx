@@ -60,7 +60,7 @@ export default function SeatSelectionPage() {
           setEvent(foundEvent);
           
           const occupied = foundEvent.tickets
-            ?.filter((ticket) => ticket.status !== 'CANCELADO' && ticket.seatNumber)
+            ?.filter((ticket) => ticket.status !== 'CANCELED' && ticket.seatNumber)
             .map((ticket) => ticket.seatNumber as string) || [];
             
           setOccupiedSeats(occupied);
