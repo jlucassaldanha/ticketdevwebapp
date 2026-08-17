@@ -1,3 +1,5 @@
+import { Ticket } from './ticket';
+
 export interface Event {
   id: string
   title: string
@@ -6,5 +8,7 @@ export interface Event {
   category: string
   date: string
   location: string
+  capacity: number
   price: number
+  tickets?: Ticket[]
 }

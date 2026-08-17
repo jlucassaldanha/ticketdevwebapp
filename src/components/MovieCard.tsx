@@ -60,7 +60,7 @@ export default function MovieCard({ event }: { event: Event }) {
             </Typography>
             <Button 
               component={Link} 
-              href={`/eventos/${event.id}`} 
+              href={`/events/${event.id}`} 
               variant="contained" 
               color="primary" 
               size="small"
