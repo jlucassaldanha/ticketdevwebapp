@@ -19,7 +19,12 @@ export default async function Page() {
   return (
     <div>
       <main>
-        {events.map((e) => e.title)}
+        {events.map((e) => (
+          <div key={e.id}>
+            {e.title}
+            {e.location}
+          </div>
+        ))}
       </main>
     </div>
   );

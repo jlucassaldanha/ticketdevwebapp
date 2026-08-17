@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -16,7 +16,6 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   });
 
   if (!response.ok) {
-    // 🛡️ Tipagem estrita de erro sem usar 'any'
     const errorData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     
     const errorMessage = typeof errorData.error === 'string'
@@ -28,6 +27,5 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     throw new Error(errorMessage);
   }
 
-  // Retorna com a tipagem forte definida pelo chamador
   return response.json() as Promise<T>;
 }

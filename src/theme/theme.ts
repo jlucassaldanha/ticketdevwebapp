@@ -33,10 +33,6 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           padding: '10px 20px',
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0px 4px 12px rgba(124, 58, 237, 0.3)',
-          },
         },
       },
     },
