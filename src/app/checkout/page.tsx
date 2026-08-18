@@ -93,7 +93,7 @@ function CheckoutContent() {
       if (simulateStatus === 'APPROVED') {
         setSuccess(true);
         setTimeout(() => {
-          router.push('/ingressos');
+          router.push('/tickets');
         }, 2500);
       }
     } catch (err) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, 
   Typography, 
@@ -8,7 +8,7 @@ import {
   Grid, 
   Button, 
   Paper, 
-  Stack,  
+  Stack, 
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -16,7 +16,7 @@ import {
   DialogContentText,
   DialogActions,
   Alert,
-  Chip
+  Chip,
 } from '@mui/material';
 import MovieIcon from '@mui/icons-material/Movie';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -27,27 +27,22 @@ import ShareIcon from '@mui/icons-material/Share';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { apiFetch } from '@/lib/api';
-import ProtectedRoute from '@/components/ProtectedRoute'; // Ajuste o import conforme seu projeto
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Link from 'next/link';
 import { Ticket } from '@/types/ticket';
-
 
 export default function MyTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados para Modal de Confirmação de Cancelamento
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [ticketToCancel, setTicketToCancel] = useState<Ticket | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  // Carrega os ingressos do cliente
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       const data = await apiFetch<Ticket[]>('/api/tickets/my-tickets');
-      // Filtramos para não poluir a listagem principal com cancelados, 
-      // ou podemos exibir com visual "apagado". Vamos exibir todos e ordenar por data.
       setTickets(data);
     } catch (err) {
       console.error('Erro ao carregar ingressos:', err);
@@ -55,13 +50,22 @@ export default function MyTicketsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadTickets();
   }, []);
 
-  // Abre diálogo de confirmação de cancelamento
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.resolve().then(() => {
+      if (isMounted) {
+        loadTickets();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadTickets]);
+
   const handleOpenCancelDialog = (ticket: Ticket) => {
     setTicketToCancel(ticket);
     setCancelDialogOpen(true);
@@ -72,17 +76,14 @@ export default function MyTicketsPage() {
     setCancelDialogOpen(false);
   };
 
-  // Dispara o cancelamento no back-end
   const handleConfirmCancel = async () => {
     if (!ticketToCancel) return;
     setCancelling(true);
     try {
-      // Endpoint estrito do seu back-end para cancelamento transacional
       await apiFetch(`/api/tickets/${ticketToCancel.id}/cancel`, {
         method: 'POST'
       });
       
-      // Recarrega os dados locais atualizados (liberando a poltrona no SQLite)
       await loadTickets();
       handleCloseCancelDialog();
     } catch (err) {
@@ -93,7 +94,6 @@ export default function MyTicketsPage() {
     }
   };
 
-  // Abre janela de compartilhamento nativa do celular/navegador ou copia link
   const handleShare = (secureHash: string) => {
     const shareUrl = `${window.location.origin}/tickets/share/${secureHash}`;
     
@@ -115,7 +115,6 @@ export default function MyTicketsPage() {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6, color: 'text.primary' }}>
         <Container maxWidth="md">
           
-          {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 5 }}>
             <Button 
               component={Link} 
@@ -134,7 +133,7 @@ export default function MyTicketsPage() {
             Meus <span style={{ background: 'linear-gradient(45deg, #7c3aed, #f43f5e)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Ingressos</span>
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Aqui estão suas reservas de cinema. Apresente o QR Code na portaria ou compartilhe o link do voucher com seus amigos!
+            Aqui estão suas reservas de cinema. Apresente o QR Code na portaria!
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
@@ -157,8 +156,8 @@ export default function MyTicketsPage() {
           ) : (
             <Stack spacing={4}>
               {tickets.map((ticket) => {
-                const isCancelled = ticket.status === 'CANCELADO';
-                const isUsed = ticket.status === 'UTILIZADO';
+                const isCancelled = ticket.status === 'CANCELLED';
+                const isUsed = ticket.status === 'USED';
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${ticket.secureHash}`;
 
                 return (
@@ -175,24 +174,12 @@ export default function MyTicketsPage() {
                       opacity: isCancelled ? 0.55 : 1,
                       position: 'relative',
                       bgcolor: 'background.paper',
-                      transition: 'transform 0.2s',
-                      '&:hover': {
-                        transform: isCancelled ? 'none' : 'scale(1.01)',
-                      }
                     }}
-                  >
+                  >\n                    
                     
-                    {/* PARTE ESQUERDA: Detalhes do Ingresso (Cria o visual de bilhete de cinema) */}
                     <Box sx={{ p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <Box>
-                        {/* Status Chip */}
                         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-                          <Chip 
-                            label={ticket.event.category} 
-                            size="small" 
-                            variant="outlined" 
-                            sx={{ fontWeight: 700 }}
-                          />
                           <Chip 
                             label={ticket.status} 
                             size="small" 
@@ -206,8 +193,7 @@ export default function MyTicketsPage() {
                         </Typography>
 
                         <Grid container spacing={2}>
-                          {/* Data/Hora */}
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                               <CalendarMonthIcon sx={{ color: 'primary.main', fontSize: 20 }} />
                               <Box>
@@ -219,8 +205,7 @@ export default function MyTicketsPage() {
                             </Stack>
                           </Grid>
 
-                          {/* Localização */}
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                               <LocationOnIcon sx={{ color: 'primary.main', fontSize: 20 }} />
                               <Box>
@@ -232,13 +217,12 @@ export default function MyTicketsPage() {
                             </Stack>
                           </Grid>
 
-                          {/* Poltrona */}
-                          <Grid item xs={12} sm={6}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
                             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                              <EventSeatIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
+                              <EventSeatIcon sx={{ color: 'primary.main', fontSize: 20 }} />
                               <Box>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Assento</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 900, color: 'secondary.main' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 900}}>
                                   {ticket.seatNumber ? `Fileira ${ticket.seatNumber[0]}, Cadeira ${ticket.seatNumber.substring(1)}` : 'Não demarcado'}
                                 </Typography>
                               </Box>
@@ -247,12 +231,11 @@ export default function MyTicketsPage() {
                         </Grid>
                       </Box>
 
-                      {/* Botões de Ação do Voucher */}
                       {!isCancelled && (
                         <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
                           <Button 
                             variant="outlined" 
-                            color="secondary" 
+                            color="primary" 
                             size="small"
                             startIcon={<ShareIcon />}
                             onClick={() => handleShare(ticket.secureHash)}
@@ -274,7 +257,6 @@ export default function MyTicketsPage() {
                       )}
                     </Box>
 
-                    {/* PERFURAÇÃO ESTILO BILHETE (Dotted vertical separator) */}
                     <Box 
                       sx={{ 
                         width: { xs: '100%', md: '1px' }, 
@@ -285,7 +267,6 @@ export default function MyTicketsPage() {
                       }} 
                     />
 
-                    {/* PARTE DIREITA: QR Code Stub */}
                     <Box 
                       sx={{ 
                         p: 4, 
@@ -306,7 +287,6 @@ export default function MyTicketsPage() {
                         </Box>
                       ) : (
                         <>
-                          {/* QR Code gerado dinamicamente com base no secureHash */}
                           <Box 
                             sx={{ 
                               p: 1.5, 
@@ -344,7 +324,6 @@ export default function MyTicketsPage() {
           )}
         </Container>
 
-        {/* DIÁLOGO CONFIRMAÇÃO DE CANCELAMENTO */}
         <Dialog
           open={cancelDialogOpen}
           onClose={handleCloseCancelDialog}
