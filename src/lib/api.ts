@@ -1,5 +1,17 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
+
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.status = status;
+    this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -25,7 +37,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         ? errorData.message
         : 'Erro na requisição';
 
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, response.status, errorData);
   }
 
   return response.json() as Promise<T>;

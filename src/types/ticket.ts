@@ -30,3 +30,8 @@ export interface SharedTicket {
     date: Date
   };
 }
+
+export interface ValidateTicketResponse {
+  ticket?: SharedTicket| null;
+  correctEventTitle?: string;
+}

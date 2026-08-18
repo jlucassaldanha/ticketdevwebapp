@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Container, 
   Typography, 
   Box, 
   Paper, 
-  Stack, 
   Button, 
   CircularProgress,
   FormControl,
@@ -30,24 +29,23 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Link from 'next/link';
 import { Event } from '@/types/event';
 import { ValidationResult } from '@/types/gate';
-
+import { ValidateTicketResponse } from '@/types/ticket';
 
 export default function PortariaPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   
-  // Entrada manual ou simulada do hash
   const [hashInput, setHashInput] = useState('');
   const [validating, setValidating] = useState(false);
 
-  // Status de Validação da Portaria (O feedback gigante colorido)
-  const [validationResult, setValidationResult] = useState<ValidationResult>({
-    status: 'NONE',
-    message: ''
-  });
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // Carrega os eventos ativos do banco de dados
+  const [validationResult, setValidationResult] = useState<ValidationResult>({ status: 'NONE', message: '' });
+
+  const scannerRef = useRef<unknown>(null);
+  const validateFnRef = useRef<(hash: string) => Promise<void>>(async () => {});
+
   useEffect(() => {
     async function loadEvents() {
       try {
@@ -65,10 +63,10 @@ export default function PortariaPage() {
   const handleEventChange = (event: SelectChangeEvent) => {
     setSelectedEventId(event.target.value);
     setValidationResult({ status: 'NONE', message: '' });
+    setIsCameraActive(false); 
   };
 
-  // 🛡️ Lógica central de validação de ingressos na portaria
-  const handleValidateTicket = async (hashToValidate: string) => {
+  const handleValidateTicket = useCallback(async (hashToValidate: string) => {
     if (!selectedEventId || !hashToValidate.trim()) return;
 
     setValidating(true);
@@ -78,69 +76,124 @@ export default function PortariaPage() {
         currentEventId: selectedEventId
       };
 
-      // Chamada HTTP para o endpoint de validação da portaria
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/gate/validate`, {
+      const data = await apiFetch<ValidateTicketResponse>('/api/gate/validate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      setValidationResult({
+        status: 'VALID',
+        message: 'Entrada autorizada! Aproveite a sessão.',
+        ticketDetails: {
+          movieTitle: data.ticket?.event?.title || 'Filme selecionado',
+          seatNumber: data.ticket?.seatNumber || 'Pista',
+          clientName: data.ticket?.client?.name || 'Cliente'
+        }
+      });
+    } catch (err: unknown) {
+      const apiError = err as { status?: number; data?: ValidateTicketResponse; message?: string };
 
-      if (response.status === 200) {
-        // 🟢 STATUS: VALID (Válido - Entrada liberada)
-        setValidationResult({
-          status: 'VALID',
-          message: 'Entrada autorizada! Aproveite a sessão.',
-          ticketDetails: {
-            movieTitle: data.ticket?.event?.title || 'Filme selecionado',
-            seatNumber: data.ticket?.seatNumber || 'Pista',
-            clientName: data.ticket?.client?.name || 'Cliente'
-          }
-        });
-      } else if (response.status === 409) {
-        // 🟡 STATUS: ALREADY_USED (Ingresso já utilizado anteriormente)
+      if (apiError.status === 409) {
+        const errorData = apiError.data;
         setValidationResult({
           status: 'ALREADY_USED',
           message: 'ATENÇÃO: Este ingresso já foi validado na portaria!',
           ticketDetails: {
-            movieTitle: data.ticket?.event?.title || 'Filme selecionado',
-            seatNumber: data.ticket?.seatNumber || 'Pista',
-            clientName: data.ticket?.client?.name || 'Cliente'
+            movieTitle: errorData?.ticket?.event?.title || 'Filme selecionado',
+            seatNumber: errorData?.ticket?.seatNumber || 'Pista',
+            clientName: errorData?.ticket?.client?.name || 'Cliente'
           }
         });
-      } else if (response.status === 400) {
-        // 🔵 STATUS: WRONG_EVENT (Ingresso pertence a outro evento)
+      } else if (apiError.status === 400) {
+        const errorData = apiError.data;
         setValidationResult({
           status: 'WRONG_EVENT',
-          message: `EVENTO INCORRETO! Este ingresso pertence ao filme:`,
+          message: 'EVENTO INCORRETO! Este ingresso pertence ao filme:',
           ticketDetails: {
-            movieTitle: data.correctEventTitle || 'Outro filme',
-            seatNumber: data.ticket?.seatNumber || 'Pista',
-            clientName: data.ticket?.client?.name || 'Cliente'
+            movieTitle: errorData?.correctEventTitle || 'Outro filme',
+            seatNumber: errorData?.ticket?.seatNumber || 'Pista',
+            clientName: errorData?.ticket?.client?.name || 'Cliente'
           }
         });
       } else {
-        // 🔴 STATUS: INVALID (404 ou outros - Fraude ou Hash falso)
         setValidationResult({
           status: 'INVALID',
-          message: 'ALERTA DE SEGURANÇA: Ingresso inválido ou assinatura corrompida!'
+          message: apiError.message || 'ALERTA DE SEGURANÇA: Ingresso inválido ou assinatura corrompida!'
         });
       }
-    } catch (err) {
-      console.error('Erro na validação do bilhete:', err);
-      setValidationResult({
-        status: 'INVALID',
-        message: 'Ocorreu um erro ao processar a validação.'
-      });
     } finally {
       setValidating(false);
       setHashInput('');
     }
-  };
+  }, [selectedEventId]);
+
+  useEffect(() => {
+    validateFnRef.current = handleValidateTicket;
+  }, [handleValidateTicket]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function startScanner() {
+      if (!isCameraActive || !selectedEventId) return;
+
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        
+        const html5Qrcode = new Html5Qrcode('qr-reader');
+        scannerRef.current = html5Qrcode;
+
+        await html5Qrcode.start(
+          { facingMode: 'environment' }, 
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          (decodedText: string) => {
+            validateFnRef.current(decodedText);
+            stopScanner(); 
+          },
+          () => { }
+        );
+      } catch (err) {
+        console.error('Erro ao iniciar o leitor de QR Code:', err);
+        alert('Não foi possível acessar a câmera. Verifique as permissões no navegador.');
+        setIsCameraActive(false);
+      }
+    }
+
+    const stopScanner = async () => {
+      const activeScanner = scannerRef.current as { isScanning?: boolean; stop?: () => Promise<void> } | null;
+      if (activeScanner) {
+        try {
+          if (activeScanner.isScanning && activeScanner.stop) {
+            await activeScanner.stop();
+          }
+        } catch (err) {
+          console.error('Erro ao parar a câmera:', err);
+        } finally {
+          scannerRef.current = null;
+          if (isMounted) {
+            setIsCameraActive(false);
+          }
+        }
+      }
+    };
+
+    if (isCameraActive) {
+      startScanner();
+    } else {
+      stopScanner();
+    }
+
+    return () => {
+      isMounted = false;
+      const activeScanner = scannerRef.current as { isScanning?: boolean; stop?: () => Promise<void> } | null;
+      if (activeScanner && activeScanner.isScanning && activeScanner.stop) {
+        activeScanner.stop().catch(console.error);
+      }
+    };
+  }, [isCameraActive, selectedEventId]);
 
   const handleDismissResult = () => {
     setValidationResult({ status: 'NONE', message: '' });
@@ -154,32 +207,31 @@ export default function PortariaPage() {
     );
   }
 
-  // 🎨 CONFIGURAÇÕES VISUAIS DOS CORES E ESTILOS EXIGIDOS PELO EDITAL
   const getFeedbackStyles = () => {
     switch (validationResult.status) {
       case 'VALID':
         return {
-          bgColor: '#10b981', // Verde esmeralda
+          bgColor: '#10b981',
           icon: <CheckCircleIcon sx={{ fontSize: 90, color: 'white' }} />,
-          title: 'VALIDADO 🟢'
+          title: 'VALIDADO'
         };
       case 'ALREADY_USED':
         return {
-          bgColor: '#f59e0b', // Amarelo/Laranja de aviso
+          bgColor: '#f59e0b',
           icon: <WarningIcon sx={{ fontSize: 90, color: 'white' }} />,
-          title: 'ALREADY USED 🟡'
+          title: 'JÁ UTILIZADO'
         };
       case 'WRONG_EVENT':
         return {
-          bgColor: '#3b82f6', // Azul de informação
+          bgColor: '#3b82f6',
           icon: <InfoIcon sx={{ fontSize: 90, color: 'white' }} />,
-          title: 'WRONG EVENT 🔵'
+          title: 'EVENTO ERRADO'
         };
       case 'INVALID':
         return {
-          bgColor: '#ef4444', // Vermelho de erro
+          bgColor: '#ef4444',
           icon: <ErrorIcon sx={{ fontSize: 90, color: 'white' }} />,
-          title: 'INVALID 🔴'
+          title: 'INVALIDO'
         };
       default:
         return { bgColor: 'transparent', icon: null, title: '' };
@@ -192,7 +244,6 @@ export default function PortariaPage() {
     <ProtectedRoute allowedRoles={['VALIDATOR', 'ORGANIZER']}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6, color: 'text.primary', position: 'relative' }}>
         
-        {/* OVERLAY GIGANTE COLORIDO DE FEEDBACK (Obrigatoriedade do Edital) */}
         {validationResult.status !== 'NONE' && (
           <Box 
             sx={{ 
@@ -223,7 +274,6 @@ export default function PortariaPage() {
               {validationResult.message}
             </Typography>
 
-            {/* Detalhes do Ingresso Lido no Overlay */}
             {validationResult.ticketDetails && (
               <Paper 
                 sx={{ 
@@ -271,7 +321,6 @@ export default function PortariaPage() {
           </Box>
         )}
 
-        {/* LAYOUT CONVENCIONAL DO PAINEL */}
         <Container maxWidth="md">
           
           {/* Header */}
@@ -285,7 +334,7 @@ export default function PortariaPage() {
               Voltar ao Catálogo
             </Button>
             <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 800 }}>
-              Operador da Portaria 🔑
+              Operador da Portaria
             </Typography>
           </Box>
 
@@ -293,33 +342,36 @@ export default function PortariaPage() {
             Portaria <span style={{ color: '#7c3aed' }}>Digital</span>
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Selecione a sessão ativa do cinema para iniciar a validação dos ingressos lidos da câmera ou digitados manualmente.
+            Selecione o evento e leia o QRCode.
           </Typography>
 
-          {/* 1. SELETOR DE SESSÃO */}
           <Paper sx={{ p: 4, mb: 4 }}>
             <FormControl fullWidth>
-              <InputLabel id="gate-event-label">Selecione a Sessão Ativa</InputLabel>
+              <InputLabel id="gate-event-label">Selecione o Evento</InputLabel>
               <Select
                 labelId="gate-event-label"
                 value={selectedEventId}
-                label="Selecione a Sessão Ativa"
+                label="Selecione o Evento"
                 onChange={handleEventChange}
               >
                 {events.map((ev) => (
                   <MenuItem key={ev.id} value={ev.id}>
-                    🍿 {ev.title} — {ev.location} ({new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })})
+                    {ev.title} — {ev.location} ({new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })})
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Paper>
 
-          {/* 2. ÁREA DE VALIDAÇÃO (Bloqueada se não escolher evento) */}
+          {!selectedEventId && (
+            <Alert severity="info" sx={{ my: 4, bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid #3b82f6', '& .MuiAlert-message': { color: 'white' } }}>
+              Escolha uma sessão no seletor acima para liberar as ferramentas de validação e scanner da portaria.
+            </Alert>
+          )}
+
           <Grid container spacing={3}>
             
-            {/* CÂMERA SCANNER / EMULAÇÃO */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper 
                 sx={{ 
                   p: 4, 
@@ -334,30 +386,46 @@ export default function PortariaPage() {
                   opacity: selectedEventId ? 1 : 0.4
                 }}
               >
-                <QrCodeScannerIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2, animation: selectedEventId ? 'pulse 2s infinite' : 'none' }} />
+                {isCameraActive ? (
+                  <Box 
+                    id="qr-reader" 
+                    sx={{ 
+                      width: '100%', 
+                      maxWidth: '320px', 
+                      borderRadius: 3, 
+                      overflow: 'hidden', 
+                      mb: 2,
+                      border: '1px solid #3f3f46',
+                      '& video': { borderRadius: '12px' }
+                    }} 
+                  />
+                ) : (
+                  <QrCodeScannerIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2, animation: selectedEventId ? 'pulse 2s infinite' : 'none' }} />
+                )}
                 
                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
                   Scanner de Câmera
                 </Typography>
                 <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                  No celular, clique no botão para ligar a câmera traseira e focar no QR Code impresso ou compartilhado.
+                  {isCameraActive 
+                    ? 'Aponte a câmera traseira do seu celular para o QR Code do ingresso.' 
+                    : 'No celular, clique no botão para ligar a câmera traseira e focar no QR Code impresso ou compartilhado.'}
                 </Typography>
                 
                 <Button
-                  variant="contained"
-                  color="primary"
+                  variant={isCameraActive ? "outlined" : "contained"}
+                  color={isCameraActive ? "error" : "primary"}
                   disabled={!selectedEventId}
                   startIcon={<CameraswitchIcon />}
                   fullWidth
-                  onClick={() => alert('Câmera ativada localmente! (Nos dispositivos móveis de produção, isso inicializa o leitor de QR Code nativo).')}
+                  onClick={() => setIsCameraActive(!isCameraActive)}
                 >
-                  Ligar Câmera
+                  {isCameraActive ? 'Desligar Câmera' : 'Ligar Câmera'}
                 </Button>
               </Paper>
             </Grid>
 
-            {/* CONTINGÊNCIA: DIGITAÇÃO MANUAL (Extremamente útil para avaliadores!) */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper 
                 sx={{ 
                   p: 4, 
@@ -399,12 +467,6 @@ export default function PortariaPage() {
             </Grid>
 
           </Grid>
-
-          {!selectedEventId && (
-            <Alert severity="info" sx={{ mt: 4, bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid #3b82f6', '& .MuiAlert-message': { color: 'white' } }}>
-              Escolha uma sessão no seletor acima para liberar as ferramentas de validação e scanner da portaria.
-            </Alert>
-          )}
 
         </Container>
       </Box>
