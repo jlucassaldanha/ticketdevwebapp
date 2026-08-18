@@ -4,7 +4,7 @@ export interface LoginApiResponse {
     id: string;
     name: string;
     email: string;
-    role: 'COSTUMER' | 'ORGANIZER' | 'VALIDATOR';
+    role: 'CONSUMER' | 'ORGANIZER' | 'VALIDATOR';
   };
 }
 
@@ -14,6 +14,6 @@ export interface RegisterApiResponse {
     id: string;
     name: string;
     email: string;
-    role: 'COSTUMER' | 'ORGANIZER' | 'VALIDATOR';
+    role: 'CONSUMER' | 'ORGANIZER' | 'VALIDATOR';
   };
 }

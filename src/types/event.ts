@@ -5,6 +5,7 @@ export interface Event {
   title: string
   description: string
   imageUrl: string
+  ticketsSold: number
   category: string
   date: string
   location: string

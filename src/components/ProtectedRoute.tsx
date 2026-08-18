@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         router.push('/login');
       } else if (allowedRoles && !allowedRoles.includes(user.role)) {
         if (user.role === 'VALIDATOR') router.push('/gate');
-        else if (user.role === 'ORGANIZER') router.push('/organizador');
+        else if (user.role === 'ORGANIZER') router.push('/organizer');
         else router.push('/');
       }
     }
