@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -14,49 +13,24 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel,
-  SelectChangeEvent
+  InputLabel
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { apiFetch } from '@/lib/api';
-import { Event } from '@/types/event';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import MovieCard from '@/components/MovieCard';
+import useHome from '@/hooks/useHome';
 
 export default function CatalogPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('TODAS');
-
-  useEffect(() => {
-    async function loadEvents() {
-      try {
-        const data = await apiFetch<Event[]>('/api/events');
-        setEvents(data);
-      } catch (err) {
-        console.error('Falha ao carregar eventos da API:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadEvents();
-  }, []);
-
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(search.toLowerCase()) || 
-                          event.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = selectedCategory === 'TODAS' || event.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = ['TODAS', ...Array.from(new Set(events.map((e) => e.category)))];
-
-  const handleCategoryChange = (event: SelectChangeEvent) => {
-    setSelectedCategory(event.target.value);
-  };
+  const {
+    search,
+    categories,
+    selectedCategory,
+    loading,
+    filteredEvents,
+    handleCategoryChange,
+    handleSearchChange
+  } = useHome();
 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
@@ -75,7 +49,7 @@ export default function CatalogPage() {
                 fullWidth
                 size="small"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 slotProps={{
                   input: {
                     startAdornment: (
