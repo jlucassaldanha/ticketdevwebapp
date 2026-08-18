@@ -37,7 +37,6 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import MovieIcon from '@mui/icons-material/Movie';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PeopleIcon from '@mui/icons-material/People';
@@ -72,6 +71,8 @@ export default function OrganizerPanelPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
+
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
    const loadOrganizerEvents = useCallback(async () => {
     setLoadingEvents(true);
@@ -137,7 +138,7 @@ export default function OrganizerPanelPage() {
     setSearchQuery('');
   };
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!selectedMovie) {
@@ -160,12 +161,16 @@ export default function OrganizerPanelPage() {
         price: parseFloat(eventPrice)
       };
 
-      await apiFetch('/api/events', {
-        method: 'POST',
+      const isEditMode = !!editingEventId;
+      const endpointUrl = isEditMode ? `/api/events/${editingEventId}` : '/api/events';
+      const requestMethod = isEditMode ? 'PUT' : 'POST';
+
+      await apiFetch(endpointUrl, {
+        method: requestMethod,
         body: JSON.stringify(payload)
       });
 
-      alert('Evento de cinema criado com sucesso! O back-end importou os metadados do TMDb.');
+      alert(isEditMode ? 'Sessão atualizada com sucesso!' : 'Evento de cinema criado com sucesso!');
       
       resetForm();
       setTabValue(0);
@@ -189,6 +194,39 @@ export default function OrganizerPanelPage() {
     setEventBannerUrl('');
     setEventSynopsis('');
     setSelectedMovie(null);
+    setEditingEventId(null);
+  };
+
+  const handleStartEdit = (event: Event) => {
+    setEditingEventId(event.id);
+
+    setEventTitle(event.title);
+    setEventCategory(event.category);
+    setEventLocation(event.location);
+    setEventPrice(String(event.price));
+    setEventCapacity(String(event.capacity));
+    setEventBannerUrl(event.imageUrl || '');
+    setEventSynopsis(event.description || '');
+
+    if (event.date) {
+      try {
+        const d = new Date(event.date);
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+        setEventDate(localISOTime);
+      } catch (err) {
+        setEventDate('');
+      }
+    }
+
+    setSelectedMovie({
+      id: Number(event.id) || 999999,
+      title: event.title,
+      overview: event.description || '',
+      poster_path: event.imageUrl ? event.imageUrl.replace('https://image.tmdb.org/t/p/w500', '') : null
+    });
+
+    setTabValue(1);
   };
 
   const handleOpenDeleteDialog = (event: Event) => {
@@ -342,11 +380,12 @@ export default function OrganizerPanelPage() {
                             </TableCell>
                             <TableCell align="right">
                               <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                                <IconButton 
-                                  color="inherit" 
+                                 <IconButton 
+                                  color="primary" 
                                   size="small" 
-                                  onClick={() => alert('Para editar este evento, preencha novamente os dados de data/local no formulário de criação (O edital veda a edição de assentos se houver ingressos já emitidos).')}
-                                  title="Editar Sessão"
+                                  onClick={() => handleStartEdit(event)}
+                                  disabled={ticketsSold > 0} // Veda edição se houver ingressos já emitidos
+                                  title={ticketsSold > 0 ? "Impossível editar sessões com vendas ativas" : "Editar Sessão"}
                                 >
                                   <EditIcon size="small" />
                                 </IconButton>
@@ -606,9 +645,9 @@ export default function OrganizerPanelPage() {
                         variant="contained" 
                         color="primary" 
                         disabled={submittingEvent}
-                        startIcon={submittingEvent ? <CircularProgress size={20} /> : <AddIcon />}
+                        startIcon={submittingEvent ? <CircularProgress size={20} /> : (editingEventId ? <EditIcon /> : <AddIcon />)}
                       >
-                        {submittingEvent ? 'Registrando Sessão...' : 'Publicar Evento'}
+                        {submittingEvent ? 'Registrando...' : (editingEventId ? 'Salvar Alterações' : 'Publicar Evento')}
                       </Button>
                     </Box>
                   </Stack>
