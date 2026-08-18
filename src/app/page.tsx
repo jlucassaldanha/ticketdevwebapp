@@ -1,69 +1,147 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Typography, 
+  Box, 
+  Grid, 
+  Card, 
+  CardContent, 
+  TextField, 
+  Skeleton, 
+  InputAdornment,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  SelectChangeEvent
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import { apiFetch } from '@/lib/api';
+import { Event } from '@/types/event';
+import Header from '@/components/Header';
+import Hero from '@/components/Hero';
+import MovieCard from '@/components/MovieCard';
+
+export default function CatalogPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('TODAS');
+
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const data = await apiFetch<Event[]>('/api/events');
+        setEvents(data);
+      } catch (err) {
+        console.error('Falha ao carregar eventos da API:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadEvents();
+  }, []);
+
+  const filteredEvents = events.filter((event) => {
+    const matchesSearch = event.title.toLowerCase().includes(search.toLowerCase()) || 
+                          event.description.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategory === 'TODAS' || event.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = ['TODAS', ...Array.from(new Set(events.map((e) => e.category)))];
+
+  const handleCategoryChange = (event: SelectChangeEvent) => {
+    setSelectedCategory(event.target.value);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6 }}>
+      <Container maxWidth="lg">
+        
+        <Header />
+
+        <Hero />
+
+        <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 3, mb: 6, border: '1px solid #1f2937' }}>
+          <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <TextField
+                placeholder="Buscar por filme ou descrição..."
+                variant="outlined"
+                fullWidth
+                size="small"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="category-label">Filtrar por Categoria</InputLabel>
+                <Select
+                  labelId="category-label"
+                  value={selectedCategory}
+                  label="Filtrar por Categoria"
+                  onChange={handleCategoryChange}
+                >
+                  {categories.map((cat) => (
+                    <MenuItem key={cat} value={cat}>
+                      {cat}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+          Filmes em Cartaz
+        </Typography>
+        
+        <Grid container spacing={3}>
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+                <Card sx={{ height: '100%' }}>
+                  <Skeleton variant="rectangular" height={200} />
+                  <CardContent>
+                    <Skeleton width="40%" height={24} sx={{ mb: 1 }} />
+                    <Skeleton width="80%" height={32} sx={{ mb: 2 }} />
+                    <Skeleton width="60%" height={20} />
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))
+          ) : filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={event.id}>
+                <MovieCard event={event} />
+              </Grid>
+            ))
+          ) : (
+            <Grid size={{ xs: 12 }}>
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary">
+                  Nenhum filme encontrado para a busca ou filtro selecionado.
+                </Typography>
+              </Box>
+            </Grid>
+          )}
+        </Grid>
+      </Container>
+    </Box>
   );
 }

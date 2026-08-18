@@ -1,0 +1,44 @@
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
+
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.status = status;
+    this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
+export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    
+    const errorMessage = typeof errorData.error === 'string'
+      ? errorData.error
+      : typeof errorData.message === 'string'
+        ? errorData.message
+        : 'Erro na requisição';
+
+    throw new ApiError(errorMessage, response.status, errorData);
+  }
+
+  return response.json() as Promise<T>;
+}
