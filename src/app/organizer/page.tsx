@@ -387,7 +387,7 @@ export default function OrganizerPanelPage() {
                                   disabled={ticketsSold > 0} // Veda edição se houver ingressos já emitidos
                                   title={ticketsSold > 0 ? "Impossível editar sessões com vendas ativas" : "Editar Sessão"}
                                 >
-                                  <EditIcon size="small" />
+                                  <EditIcon fontSize='small' />
                                 </IconButton>
                                 <IconButton 
                                   color="error" 
@@ -396,7 +396,7 @@ export default function OrganizerPanelPage() {
                                   disabled={ticketsSold > 0} // Edital veda exclusão de eventos com vendas ativas
                                   title={ticketsSold > 0 ? "Impossível excluir sessões com ingressos ativos" : "Excluir Sessão"}
                                 >
-                                  <DeleteIcon size="small" />
+                                  <DeleteIcon fontSize='small' />
                                 </IconButton>
                               </Stack>
                             </TableCell>
