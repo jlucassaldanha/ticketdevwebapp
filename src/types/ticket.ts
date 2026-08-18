@@ -24,5 +24,9 @@ export interface SharedTicket {
   client: {
     name: string;
   };
-  event: Event;
+  event: {
+    location: string
+    title: string
+    date: Date
+  };
 }

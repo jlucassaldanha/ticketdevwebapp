@@ -9,9 +9,9 @@ import {
   Paper, 
   Stack,  
   CircularProgress,
-  Button
+  Button,
+  Chip
 } from '@mui/material';
-import MovieIcon from '@mui/icons-material/Movie';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
@@ -33,9 +33,9 @@ export default function ShareTicketPage() {
     async function loadTicket() {
       if (!hash) return;
       try {
-        // 💡 Chamamos o endpoint público do back-end para carregar dados do voucher
-        const data = await apiFetch<SharedTicket>(`/api/tickets/share/${hash}`);
-        setTicket(data);
+        const data = await apiFetch<{ticket: SharedTicket}>(`/api/tickets/share/${hash}`);
+        setTicket(data.ticket);
+        console.log('data: ', data)
       } catch (err) {
         console.error('Erro ao carregar voucher compartilhado:', err);
         setError('Este ingresso não existe, foi cancelado ou o link é inválido.');
@@ -69,23 +69,23 @@ export default function ShareTicketPage() {
   }
 
   const isCancelled = ticket.status === 'CANCELED';
+  const isUsed = ticket.status === 'USED';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${ticket.secureHash}`;
 
+  console.log('ticket:', ticket.event)
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 8, color: 'text.primary', display: 'flex', alignItems: 'center' }}>
       <Container maxWidth="sm">
         
-        {/* Header da Marca */}
         <Box sx={{ textAlign: 'center', mb: 5 }}>
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
             Ticket<span style={{ color: '#7c3aed' }}>Dev</span>
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '2px', fontWeight: 700 }}>
-            VOUCHER DE COMPARTILHAMENTO
+            INGRESSO COMPARTILHADO VIA LINK
           </Typography>
         </Box>
 
-        {/* CARTÃO DO INGRESSO ESTILIZADO */}
         <Paper 
           elevation={12}
           sx={{
@@ -96,21 +96,20 @@ export default function ShareTicketPage() {
             position: 'relative'
           }}
         >
-          {/* Sessão de Informações do Filme */}
           <Box sx={{ p: 4 }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-              <MovieIcon color="primary" />
-              <Typography variant="overline" sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: '1px' }}>
-                Cinema Ticket
-              </Typography>
+              <Chip 
+                label={ticket.status} 
+                size="small" 
+                color={isCancelled ? 'error' : isUsed ? 'default' : 'success'} 
+                sx={{ fontWeight: 800 }}
+              />
             </Stack>
-
             <Typography variant="h4" sx={{ fontWeight: 900, mb: 3, lineHeight: 1.2 }}>
               {ticket.event.title}
             </Typography>
 
             <Stack spacing={2.5}>
-              {/* Dono do Ingresso */}
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <PersonIcon sx={{ color: 'text.secondary' }} />
                 <Box>
@@ -121,7 +120,6 @@ export default function ShareTicketPage() {
                 </Box>
               </Stack>
 
-              {/* Data e Hora */}
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <CalendarMonthIcon sx={{ color: 'text.secondary' }} />
                 <Box>
@@ -132,7 +130,6 @@ export default function ShareTicketPage() {
                 </Box>
               </Stack>
 
-              {/* Localização */}
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <LocationOnIcon sx={{ color: 'text.secondary' }} />
                 <Box>
@@ -143,12 +140,11 @@ export default function ShareTicketPage() {
                 </Box>
               </Stack>
 
-              {/* Assento Reservado */}
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                <EventSeatIcon sx={{ color: 'secondary.main' }} />
+                <EventSeatIcon sx={{ color: 'text.secondary' }} />
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Assento Reservado</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: 'secondary.main' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 900 }}>
                     {ticket.seatNumber ? `Fileira ${ticket.seatNumber[0]} - Cadeira ${ticket.seatNumber.substring(1)}` : 'Não demarcado'}
                   </Typography>
                 </Box>
@@ -156,10 +152,8 @@ export default function ShareTicketPage() {
             </Stack>
           </Box>
 
-          {/* Perfuração do Cupom (Dotted Separator) */}
           <Box sx={{ borderTop: '2px dashed #3f3f46', position: 'relative', my: 1 }} />
 
-          {/* Rodapé com QR Code para Validação */}
           <Box 
             sx={{ 
               p: 4, 
@@ -206,10 +200,9 @@ export default function ShareTicketPage() {
           </Box>
         </Paper>
 
-        {/* Botão para voltar à Home */}
         <Box sx={{ textAlign: 'center', mt: 4 }}>
           <Button component={Link} href="/" variant="outlined" startIcon={<HomeIcon />} size="small">
-            Voltar para o Catálogo Geral
+            Ir para o Catálogo Geral
           </Button>
         </Box>
 
