@@ -40,7 +40,7 @@ export default function CatalogPage() {
 
         <Hero />
 
-        <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 3, mb: 6, border: '1px solid #1f2937' }}>
+        <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 1, mb: 6, border: '1px solid #1f2937' }}>
           <Grid container spacing={2} sx={{ alignItems: 'center' }}>
             <Grid size={{ xs: 12, md: 8 }}>
               <TextField
