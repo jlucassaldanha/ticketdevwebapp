@@ -78,7 +78,7 @@ export default function OrganizerPanelPage() {
     setLoadingEvents(true);
     setErrorMsg(null);
     try {
-      const data = await apiFetch<Event[]>('/api/events');
+      const data = await apiFetch<Event[]>('/api/events/my-events');
       setEvents(data);
     } catch (err: unknown) {
       console.error('Erro ao carregar eventos do organizador:', err);
