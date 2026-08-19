@@ -4,13 +4,15 @@ Este é o repositório do **Front-End da TicketDev**, uma plataforma de venda, g
 
 O projeto foi construído em **Next.js (App Router)** utilizando o **Material UI (MUI v6)** como biblioteca de componentes de design.
 
+Ele consome a API Rest construída em Node que esta em produção em [TicketDevApi](https://ticketdevapi.onrender.com), e o repositório em [TicketDevApiRepo](https://github.com/jlucassaldanha/ticketdevapi) 
+
 ---
 
 ## 🚀 Como Executar o Front-End
 
 ### Pré-requisitos
 *   **Node.js (v20 ou v22+)**
-*   **Back-end da TicketDev** rodando (localmente ou via Docker na porta `3000`)
+*   **Back-end da TicketDev** rodando (localmente ou via Docker na porta `3000` ou pela API publicada em `https://ticketdevapi.onrender.com`)
 
 ### Passo a Passo Local:
 1.  Navegue até a pasta do projeto front-end no terminal:
@@ -22,15 +24,15 @@ O projeto foi construído em **Next.js (App Router)** utilizando o **Material UI
     npm install
     ```
 3.  Configure o arquivo de variáveis de ambiente **`.env.local`** na raiz do front-end:
-    ```env
-    NEXT_PUBLIC_API_URL="http://localhost:3000"
+    ```bash
+    NEXT_PUBLIC_API_URL="http://localhost:3000" # ou "https://ticketdevapi.onrender.com"
     ```
 4.  Inicie o servidor de desenvolvimento:
     ```bash
     npm run dev
     ```
 
-O front-end estará disponível em: **`http://localhost:3001`**
+O front-end estará disponível em: **`http://localhost:3000`** ou **`http://localhost:3001`**
 
 ---
 
