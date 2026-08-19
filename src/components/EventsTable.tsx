@@ -13,32 +13,138 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  Chip
+  Chip,
+  useTheme,
+  useMediaQuery,
+  Card,
+  CardContent,
+  Divider
 } from '@mui/material';
 import MovieIcon from '@mui/icons-material/Movie';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { Event } from '@/types/event';
 
-export default function EventsTable({ events, loadingEvents, setTabValue, handleStartEdit, handleOpenDeleteDialog }: {events: Event[], loadingEvents: boolean, setTabValue: React.Dispatch<React.SetStateAction<number>>, handleStartEdit: (event: Event) => void, handleOpenDeleteDialog: (event: Event) => void}) {
+export default function EventsTable({ 
+  events, 
+  loadingEvents, 
+  setTabValue, 
+  handleStartEdit, 
+  handleOpenDeleteDialog 
+}: {
+  events: Event[], 
+  loadingEvents: boolean, 
+  setTabValue: React.Dispatch<React.SetStateAction<number>>, 
+  handleStartEdit: (event: Event) => void, 
+  handleOpenDeleteDialog: (event: Event) => void
+}) {
+  const theme = useTheme();
+  
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  if (loadingEvents) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <Paper sx={{ p: 6, textAlign: 'center', border: '1px dashed #3f3f46', bgcolor: 'transparent' }}>
+        <MovieIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Nenhum evento registrado</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Você ainda não cadastrou nenhum filme para exibição. Comece agora na aba de criação!
+        </Typography>
+        <Button variant="contained" color="primary" onClick={() => setTabValue(1)}>
+          Criar Primeira Sessão
+        </Button>
+      </Paper>
+    );
+  }
+
   return (
     <>
-      {loadingEvents ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress color="primary" />
-        </Box>
-      ) : events.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: 'center', border: '1px dashed #3f3f46', bgcolor: 'transparent' }}>
-          <MovieIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Nenhum evento registrado</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Você ainda não cadastrou nenhum filme para exibição. Comece agora na aba de criação!
-          </Typography>
-          <Button variant="contained" color="primary" onClick={() => setTabValue(1)}>
-            Criar Primeira Sessão
-          </Button>
-        </Paper>
+      {isMobile ? (
+        <Stack spacing={2}>
+          {events.map((event) => {
+            const ticketsSold = event.ticketsSold || 0;
+            const pctFull = Math.min(100, Math.round((ticketsSold / event.capacity) * 100));
+            const isSoldOut = pctFull >= 100;
+
+            return (
+              <Card key={event.id} sx={{ borderRadius: 1, border: '1px solid #27272a', bgcolor: 'background.paper', backgroundImage: 'none' }}>
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'flex-start' }}>
+                    <CardMedia
+                      component="img"
+                      image={event.imageUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=200'}
+                      alt={event.title}
+                      sx={{ width: 60, height: 80, borderRadius: 1.5, objectFit: 'cover', border: '1px solid #3f3f46' }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 800, color: 'white', lineHeight: 1.2, mb: 0.5 }}>
+                        {event.title}
+                      </Typography>
+                      <Chip label={event.category} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem', mb: 1 }} />
+                      <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 800 }}>
+                        {event.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      {event.location}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {ticketsSold} / {event.capacity} ingressos
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                        {pctFull}%
+                      </Typography>
+                    </Stack>
+                    <Box sx={{ width: '100%', height: 6, bgcolor: '#27272a', borderRadius: 3, overflow: 'hidden' }}>
+                      <Box sx={{ width: `${pctFull}%`, height: '100%', bgcolor: isSoldOut ? 'error.main' : 'primary.main', borderRadius: 3 }} />
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ borderColor: '#27272a', mb: 1 }} />
+
+                  <Stack direction="row" sx={{ spacing:1, justifyContent:"flex-end"}}>
+                    <IconButton 
+                      color="primary" 
+                      onClick={() => handleStartEdit(event)}
+                      disabled={ticketsSold > 0}
+                      title={ticketsSold > 0 ? "Impossível editar sessões com vendas ativas" : "Editar Sessão"}
+                    >
+                      <EditIcon fontSize='small' />
+                    </IconButton>
+                    <IconButton 
+                      color="error" 
+                      onClick={() => handleOpenDeleteDialog(event)}
+                      disabled={ticketsSold > 0}
+                      title={ticketsSold > 0 ? "Impossível excluir sessões com ingressos ativos" : "Excluir Sessão"}
+                    >
+                      <DeleteIcon fontSize='small' />
+                    </IconButton>
+                  </Stack>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Stack>
       ) : (
+        
         <TableContainer component={Paper} sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid #27272a' }}>
           <Table>
             <TableHead sx={{ bgcolor: 'rgba(255, 255, 255, 0.02)' }}>
@@ -99,11 +205,11 @@ export default function EventsTable({ events, loadingEvents, setTabValue, handle
                     </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                          <IconButton 
+                        <IconButton 
                           color="primary" 
                           size="small" 
                           onClick={() => handleStartEdit(event)}
-                          disabled={ticketsSold > 0} // Veda edição se houver ingressos já emitidos
+                          disabled={ticketsSold > 0}
                           title={ticketsSold > 0 ? "Impossível editar sessões com vendas ativas" : "Editar Sessão"}
                         >
                           <EditIcon fontSize='small' />
@@ -112,7 +218,7 @@ export default function EventsTable({ events, loadingEvents, setTabValue, handle
                           color="error" 
                           size="small" 
                           onClick={() => handleOpenDeleteDialog(event)}
-                          disabled={ticketsSold > 0} // Edital veda exclusão de eventos com vendas ativas
+                          disabled={ticketsSold > 0}
                           title={ticketsSold > 0 ? "Impossível excluir sessões com ingressos ativos" : "Excluir Sessão"}
                         >
                           <DeleteIcon fontSize='small' />
@@ -127,5 +233,5 @@ export default function EventsTable({ events, loadingEvents, setTabValue, handle
         </TableContainer>
       )}
     </>
-  )
+  );
 }
