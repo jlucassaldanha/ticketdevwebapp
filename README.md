@@ -6,6 +6,10 @@ O projeto foi construído em **Next.js (App Router)** utilizando o **Material UI
 
 Ele consome a API Rest construída em Node que esta em produção em [TicketDevApi](https://ticketdevapi.onrender.com), e o repositório em [TicketDevApiRepo](https://github.com/jlucassaldanha/ticketdevapi) 
 
+## Aviso sobre lentidão
+
+Devido a aplicação em produção estar publicada na plataforma Render utilizando o Free Tier, há certa lentidão no primeiro acesso após um tempo de inatividade.
+
 ---
 
 ## 🚀 Como Executar o Front-End
@@ -36,7 +40,7 @@ O front-end estará disponível em: **`http://localhost:3000`** ou **`http://loc
 
 ---
 
-## 🏗️ Decisões Arquiteturais e Engenharia de UI (Sênior Craftsmanship)
+## 🏗️ Decisões Arquiteturais e Engenharia de UI
 
 Buscando o nível máximo de maturidade técnica e evitando layouts genéricos (*AI slop*), as seguintes escolhas de design e arquitetura de software foram aplicadas no cliente:
 
