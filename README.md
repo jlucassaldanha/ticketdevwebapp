@@ -4,7 +4,7 @@ Este é o repositório do **Front-End da TicketDev**, uma plataforma de venda, g
 
 O projeto foi construído em **Next.js (App Router)** utilizando o **Material UI (MUI v6)** como biblioteca de componentes de design.
 
-Ele consome a API Rest construída em Node que esta em produção em [TicketDevApi](https://ticketdevapi.onrender.com), e o repositório em [TicketDevApiRepo](https://github.com/jlucassaldanha/ticketdevapi) 
+Ele consome a API Rest construída em Node que esta em produção em [TicketDevApi](https://ticketdevapi.onrender.com/api-docs), e o repositório em [TicketDevApiRepo](https://github.com/jlucassaldanha/ticketdevapi) 
 
 ## Aviso sobre lentidão
 
