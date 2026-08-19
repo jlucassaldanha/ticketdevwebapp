@@ -12,8 +12,6 @@ import {
   Stack, 
   Divider, 
   CircularProgress,
-  IconButton,
-  Avatar
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -21,6 +19,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
 import { Event } from '@/types/event';
+import SeatSelectionCard from '@/components/SeatSelectionCard';
 
 export default function SeatSelectionPage() {
   const { id } = useParams() as { id: string };
@@ -119,154 +118,14 @@ export default function SeatSelectionPage() {
 
         <Grid container spacing={4}>
           <Grid size={{ xs: 12, md: 8 }}>
-            <Paper sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: 'background.paper' }}>
-              
-              <Box sx={{ width: '100%', mb: 6, textAlign: 'center', position: 'relative' }}>
-                <Box sx={{ height: '6px', width: '80%', bgcolor: 'primary.main', mx: 'auto', borderRadius: '50%', boxShadow: '0 0 20px rgba(124, 58, 237, 0.8)' }} />
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, letterSpacing: '2px', fontWeight: 700 }}>
-                  TELA DO CINEMA
-                </Typography>
-              </Box>
-
-              <Stack spacing={2} sx={{ width: '100%', alignItems: 'center', mb: 6 }}>
-                {rows.map((row) => (
-                  <Stack key={row} direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                    <Typography variant="body2" sx={{ width: 16, fontWeight: 700, color: 'text.secondary' }}>{row}</Typography>
-
-                    {Array.from({ length: seatsPerRow }).map((_, index) => {
-                      const seatNumber = index + 1;
-                      const seatCode = `${row}${seatNumber}`;
-                      const isOccupied = occupiedSeats.includes(seatCode);
-                      const isSelected = selectedSeat === seatCode;
-
-                      const rowIndex = rows.indexOf(row);
-                      const absoluteSeatIndex = (rowIndex * seatsPerRow) + index;
-                      const isSeatWithinCapacity = absoluteSeatIndex < event.capacity;
-
-                      if (!isSeatWithinCapacity) {
-                        return (
-                          <Box 
-                            key={`empty-${seatCode}`} 
-                            sx={{ width: { xs: 32, sm: 38 }, height: { xs: 32, sm: 38 } }} 
-                          />
-                        );
-                      }
-
-                      return (
-                        <IconButton
-                          key={seatCode}
-                          onClick={() => handleSeatClick(seatCode)}
-                          disabled={isOccupied} 
-                          sx={{
-                            p: 0,
-                            cursor: isOccupied ? 'not-allowed' : 'pointer',
-                            '&.Mui-disabled': {
-                              opacity: 1, 
-                            }
-                          }}
-                        >
-                          <Avatar
-                            sx={{
-                              width: { xs: 32, sm: 38 },
-                              height: { xs: 32, sm: 38 },
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              
-                              bgcolor: isOccupied 
-                                ? 'rgba(255, 255, 255, 0.05)' 
-                                : isSelected 
-                                  ? 'primary.main' 
-                                  : 'rgba(255, 255, 255, 0.08)', 
-                              
-                              color: isOccupied 
-                                ? 'text.disabled' 
-                                : isSelected 
-                                  ? 'primary.contrastText' 
-                                  : 'text.secondary',
-
-                              border: isSelected 
-                                ? '2px solid #7c3aed' 
-                                : isOccupied 
-                                  ? '1px solid rgba(255, 255, 255, 0.02)' 
-                                  : '1px solid #3f3f46', 
-
-                              '&:hover': {
-                                bgcolor: isOccupied 
-                                  ? 'rgba(255, 255, 255, 0.05)' 
-                                  : isSelected 
-                                    ? 'primary.dark'
-                                    : 'rgba(124, 58, 237, 0.2)', 
-                                borderColor: isOccupied ? 'transparent' : 'primary.main',
-                                color: isOccupied ? 'text.disabled' : 'primary.main',
-                              }
-                            }}
-                          >
-                            {seatNumber}
-                          </Avatar>
-                        </IconButton>
-                      );
-                    })}
-
-                    <Typography variant="body2" sx={{ width: 16, fontWeight: 700, color: 'text.secondary', textAlign: 'right' }}>{row}</Typography>
-                  </Stack>
-                ))}
-              </Stack>
-
-              <Stack direction="row" spacing={3} sx={{ justifyContent: 'center', width: '100%', mt: 2 }}>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Avatar 
-                    sx={{ 
-                      width: 28, 
-                      height: 28, 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700,
-                      bgcolor: 'rgba(255, 255, 255, 0.08)',
-                      color: 'text.secondary',
-                      border: '1px solid #3f3f46'
-                    }}
-                  >
-                    D
-                  </Avatar>
-                  <Typography variant="caption" color="text.secondary">Disponível</Typography>
-                </Stack>
-
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Avatar 
-                    sx={{ 
-                      width: 28, 
-                      height: 28, 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700,
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      border: '2px solid #7c3aed'
-                    }}
-                  >
-                    S
-                  </Avatar>
-                  <Typography variant="caption" color="text.secondary">Selecionado</Typography>
-                </Stack>
-
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Avatar 
-                    sx={{ 
-                      width: 28, 
-                      height: 28, 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700,
-                      bgcolor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'text.disabled',
-                      border: '1px solid rgba(255, 255, 255, 0.02)'
-                    }}
-                  >
-                    O
-                  </Avatar>
-                  <Typography variant="caption" color="text.secondary">Ocupado</Typography>
-                </Stack>
-
-              </Stack>
-
-            </Paper>
+            <SeatSelectionCard 
+              rows={rows} 
+              seatsPerRow={seatsPerRow} 
+              occupiedSeats={occupiedSeats} 
+              selectedSeat={selectedSeat} 
+              event={event} 
+              handleSeatClick={handleSeatClick}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
