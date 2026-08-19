@@ -3,6 +3,7 @@ import { apiFetch } from '@/lib/api'
 import { RegisterApiResponse } from '@/types/auth'
 import { UserRole } from '@/types/user'
 import { SelectChangeEvent } from '@mui/material'
+import { useRouter } from 'next/navigation'
 import { ChangeEvent, useState } from 'react'
 
 export default function useRegister() {
@@ -14,6 +15,8 @@ export default function useRegister() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const router = useRouter()
+
   const handleRoleChange = (event: SelectChangeEvent) => {
     setRole(event.target.value as UserRole)
   }
@@ -24,12 +27,13 @@ export default function useRegister() {
     setSubmitting(true)
 
     try {
-      const data = await apiFetch<RegisterApiResponse>('/api/auth/register', {
+      await apiFetch<RegisterApiResponse>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ name, email, password, role }),
       })
 
-      login(data.token, data.user)
+      alert('Conta criada com sucesso! Faça login para continuar.')
+      router.push('/login')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao criar conta')
     } finally {
