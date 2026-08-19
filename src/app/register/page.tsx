@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useState } from 'react';
 import { 
   Container, 
   Box, 
@@ -13,45 +12,25 @@ import {
   InputLabel, 
   Select, 
   MenuItem,
-  SelectChangeEvent,
   Link
 } from '@mui/material';
-import { apiFetch } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
-import { RegisterApiResponse } from '@/types/auth';
 import TicketDevLogo from '@/components/TicketDevLogo';
+import useRegister from '@/hooks/useRegister';
 
 export default function RegisterPage() {
-  const { login } = useAuth()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'CLIENTE' | 'ORGANIZADOR' | 'PORTARIA'>('CLIENTE')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-
-  const handleRoleChange = (event: SelectChangeEvent) => {
-    setRole(event.target.value as 'CLIENTE' | 'ORGANIZADOR' | 'PORTARIA')
-  }
-
-  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-
-    try {
-      const data = await apiFetch<RegisterApiResponse>('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password, role }),
-      })
-
-      login(data.token, data.user)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao criar conta')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const {
+    error,
+    role,
+    password,
+    email,
+    name,
+    submitting,
+    handleRoleChange,
+    handleEmailChange,
+    handleNameChange,
+    handlePasswordChange,
+    handleSubmit
+  } = useRegister()
 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', display: 'flex', alignItems: 'center', py: 6 }}>
@@ -70,7 +49,7 @@ export default function RegisterPage() {
               fullWidth
               required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
             />
             
             <TextField
@@ -80,7 +59,7 @@ export default function RegisterPage() {
               fullWidth
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
             />
 
             <TextField
@@ -90,7 +69,7 @@ export default function RegisterPage() {
               fullWidth
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
             />
 
             <FormControl fullWidth>
@@ -101,9 +80,9 @@ export default function RegisterPage() {
                 label="Tipo de Conta (Para testes)"
                 onChange={handleRoleChange}
               >
-                <MenuItem value="CLIENTE">Cliente (Compra ingressos e assentos)</MenuItem>
-                <MenuItem value="ORGANIZADOR">Organizador (Cria e edita eventos)</MenuItem>
-                <MenuItem value="PORTARIA">Portaria (Valida ingressos na entrada)</MenuItem>
+                <MenuItem value="CONSUMER">Cliente (Compra ingressos e assentos)</MenuItem>
+                <MenuItem value="ORGANIZER">Organizador (Cria e edita eventos)</MenuItem>
+                <MenuItem value="VALIDATOR">Portaria (Valida ingressos na entrada)</MenuItem>
               </Select>
             </FormControl>
 

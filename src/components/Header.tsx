@@ -11,18 +11,24 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function Header() {
   const { user, logout } = useAuth();
 
+  const accountLink = user?.role === "CONSUMER" ? '/tickets' : user?.role === "ORGANIZER" ? '/organizer' : '/gate'
+
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-        <TicketDevLogo />
+        <Link href={'/'}>
+          <TicketDevLogo />
+        </Link>
       </Stack>
       
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
         {user ? (
           <>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              Olá, {user.name}
-            </Typography>
+            <Link href={accountLink}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Olá, {user.name}
+              </Typography>
+            </Link>
             <Button variant="outlined" color="secondary" size="small" onClick={logout}>
               Sair
             </Button>

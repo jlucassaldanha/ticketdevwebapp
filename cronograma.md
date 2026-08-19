@@ -18,7 +18,7 @@ Este cronograma define a ordem cronológica exata de implementação do front-en
 
 ---
 
-## 📅 Dia 5 — Catálogo de Cinema, Mapa de Assentos e Checkout Simulado
+## 📅 Dia 5 — Catálogo de Cinema, Mapa de Assentos e Checkout Simulado, Ingressos com QR Code (HMAC), Portaria & Scanner de Câmera
 *O foco do quinto dia é a jornada principal de compra do cliente, do catálogo à confirmação de pagamento.*
 
 *   **Catálogo de Filmes (Home):**
@@ -31,11 +31,6 @@ Este cronograma define a ordem cronológica exata de implementação do front-en
     *   Interface de checkout exibindo o resumo do pedido (filme, assento selecionado, valor).
     *   Botões para simular explicitamente o status do pagamento: **Aprovar Compra** ou **Recusar Compra**.
     *   Tratamento de erro visual impecável para o cenário de recusa (exibição de erro sem quebrar o fluxo).
-
----
-
-## 📅 Dia 6 — Ingressos com QR Code (HMAC), Portaria & Scanner de Câmera
-*O sexto dia é focado na entrega de valor de segurança e portaria offline.*
 
 *   **Painel "Meus Ingressos":**
     *   Listagem de todos os ingressos comprados pelo cliente.
@@ -55,7 +50,7 @@ Este cronograma define a ordem cronológica exata de implementação do front-en
 
 ---
 
-## 📅 Dia 7 — Painel do Organizador, Teste de Ponta a Ponta e Entrega
+## 📅 Dia 6 — Painel do Organizador, Teste de Ponta a Ponta, polimento e Entrega
 *O último dia é reservado para o gerenciamento de eventos, polimento estético final e consolidação do projeto.*
 
 *   **Painel do Organizador:**
