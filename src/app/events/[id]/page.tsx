@@ -1,90 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { 
   Container, 
   Typography, 
   Box, 
   Grid, 
   Button, 
-  Paper, 
-  Stack, 
-  Divider, 
   CircularProgress,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
-import { Event } from '@/types/event';
 import SeatSelectionCard from '@/components/SeatSelectionCard';
+import Header from '@/components/Header';
+import SelectedSeatInfoCard from '@/components/SelectedSeatInfoCard';
+import useSeatSelection from '@/hooks/useSeatSelection';
 
 export default function SeatSelectionPage() {
-  const { id } = useParams() as { id: string };
-  const router = useRouter();
-
-  const [event, setEvent] = useState<Event | null>(null);
-  const [occupiedSeats, setOccupiedSeats] = useState<string[]>([]);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const getDynamicGrid = (capacity: number) => {
-    let cols = 8;
-    if (capacity > 100) cols = 12;
-    else if (capacity > 40) cols = 10;
-
-    const totalRows = Math.ceil(capacity / cols);
-    const rowLetters: string[] = [];
-
-    for (let i = 0; i < totalRows; i++) {
-      const letter = String.fromCharCode(65 + i);
-      rowLetters.push(letter);
-    }
-
-    return { rows: rowLetters, seatsPerRow: cols };
-  };
-
-  const { rows, seatsPerRow } = event ? getDynamicGrid(event.capacity) : { rows: ['A', 'B', 'C', 'D', 'E'], seatsPerRow: 8 };
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const allEvents = await apiFetch<Event[]>('/api/events');
-
-        const foundEvent = allEvents.find((e) => e.id === id);
-
-        if (foundEvent) {
-          setEvent(foundEvent);
-          
-          const occupied = foundEvent.tickets
-            ?.filter((ticket) => ticket.status !== 'CANCELED' && ticket.seatNumber)
-            .map((ticket) => ticket.seatNumber as string) || [];
-            
-          setOccupiedSeats(occupied);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados do evento:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (id) {
-      loadData();
-    }
-  }, [id]);
-
-  const handleSeatClick = (seatCode: string) => {
-    if (occupiedSeats.includes(seatCode)) return; 
-    setSelectedSeat(selectedSeat === seatCode ? null : seatCode);
-  };
-
-  const handleProceedToCheckout = () => {
-    if (!selectedSeat) return;
-    router.push(`/checkout?eventId=${id}&seat=${selectedSeat}`);
-  };
+  const {
+    loading,
+    rows, 
+    event,
+    seatsPerRow,
+    occupiedSeats,
+    selectedSeat,
+    handleSeatClick,
+    handleProceedToCheckout
+  } = useSeatSelection()
 
   if (loading) {
     return (
@@ -107,6 +48,8 @@ export default function SeatSelectionPage() {
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 6, color: 'text.primary' }}>
       <Container maxWidth="lg">
         
+        <Header />
+
         <Button 
           component={Link} 
           href="/" 
@@ -129,60 +72,11 @@ export default function SeatSelectionPage() {
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justify_content: 'space-between' }}>
-              <Box>
-                <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 700 }}>Você escolheu:</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, mt: 1, mb: 3, lineHeight: 1.2 }}>{event.title}</Typography>
-
-                <Stack spacing={2} sx={{ mb: 4 }} color="text.secondary">
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                    <CalendarMonthIcon sx={{ fontSize: 20 }} />
-                    <Typography variant="body2">
-                      {new Date(event.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                    <LocationOnIcon sx={{ fontSize: 20 }} />
-                    <Typography variant="body2">{event.location}</Typography>
-                  </Stack>
-                </Stack>
-
-                <Divider sx={{ my: 3 }} />
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Assento Selecionado:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: selectedSeat ? 'primary.main' : 'text.secondary' }}>
-                    {selectedSeat ? `Fileira ${selectedSeat}, Poltrona ${selectedSeat.substring(1)}` : 'Nenhum'}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">Valor do Ingresso:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>R$ {event.price.toFixed(2)}</Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ mt: 4 }}>
-                <Divider sx={{ my: 3 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 3 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 700 }}>Total:</Typography>
-                  <Typography variant="h5" color="secondary.main" sx={{ fontWeight: 900 }}>
-                    R$ {selectedSeat ? event.price.toFixed(2) : '0,00'}
-                  </Typography>
-                </Box>
-
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  fullWidth 
-                  size="large"
-                  disabled={!selectedSeat}
-                  onClick={handleProceedToCheckout}
-                >
-                  Confirmar e Ir para Pagamento
-                </Button>
-              </Box>
-            </Paper>
+            <SelectedSeatInfoCard 
+              event={event}
+              selectedSeat={selectedSeat}
+              handleProceedToCheckout={handleProceedToCheckout}
+            />
           </Grid>
         </Grid>
       </Container>

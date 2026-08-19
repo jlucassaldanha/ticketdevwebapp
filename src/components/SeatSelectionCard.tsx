@@ -20,7 +20,9 @@ export default function SeatSelectionCard({
     <Paper sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: 'background.paper', width: '100%' }}>
               
       <Box sx={{ width: '100%', mb: { xs: 4, md: 6 }, textAlign: 'center', position: 'relative' }}>
-        <Box sx={{ height: '6px', width: '80%', bgcolor: 'primary.main', mx: 'auto', borderRadius: '50%' }} />
+        <Box sx={{ height: '6px', width: '80%', bgcolor: 'primary.main', mx: 'auto', borderRadius: '50%'
+          
+         }} />
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, letterSpacing: '2px', fontWeight: 700 }}>
           TELA DO CINEMA
         </Typography>
