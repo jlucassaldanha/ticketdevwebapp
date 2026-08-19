@@ -14,6 +14,7 @@ import { useGateValidator } from '@/hooks/useGateValidator';
 import { ValidationFeedback } from '@/components/ValidationFeedback';
 import { CameraScanner } from '@/components/CameraScanner';
 import { ManualValidator } from '@/components/ManualValidator';
+import Header from '@/components/Header';
 
 export default function PortariaPage() {
   const {
@@ -44,6 +45,8 @@ export default function PortariaPage() {
         <ValidationFeedback result={validationResult} onDismiss={handleDismissResult} />
 
         <Container maxWidth="md">
+
+          <Header />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 5 }}>
             <Button 
               component={Link} href="/" startIcon={<ArrowBackIcon />} 
