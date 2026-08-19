@@ -29,6 +29,17 @@ export default function Header() {
                 Olá, {user.name}
               </Typography>
             </Link>
+            {user.role === "ORGANIZER" && 
+              <Button variant="outlined" color="primary" size="small" href='/gate'>
+                Portaria
+              </Button>
+            }
+            {user.role === "CONSUMER" && 
+              <Button variant="outlined" color="primary" size="small" href='/tickets'>
+                Tickets
+              </Button>
+            }
+            
             <Button variant="outlined" color="secondary" size="small" onClick={logout}>
               Sair
             </Button>
